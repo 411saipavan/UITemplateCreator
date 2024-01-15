@@ -10,6 +10,7 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
     Vector2 _position = Vector2.zero;
     Vector2 _rotation = Vector2.zero;
     Vector2 _scale = new Vector2(2,2);
+    Vector2 scrollPosition;
     private int selectedOptionIndex;
     TemplateClass template = new TemplateClass();
 
@@ -21,6 +22,11 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
 
     public void OnGUI(){
         AddElementUI();
+        GUILayout.Label("Template Preview(Add elements to see the preview)");
+         scrollPosition = GUILayout.BeginScrollView(
+            scrollPosition, GUILayout.Width(0), GUILayout.Height(0));
+        printEditableTemplate(template.elements,0);
+        GUILayout.EndScrollView();
     }
 
     void AddElementUI(){
@@ -35,5 +41,16 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
                 template.elements.Add(new UIElement((UIElementType)selectedOptionIndex,name,text,_position,_rotation,_scale));
         }
 
+    }
+
+    void printEditableTemplate(List<UIElement> elements,int depth){
+        foreach(UIElement element in elements){
+            element.name = EditorGUILayout.TextField("Name: ",element.name);
+            element.text = EditorGUILayout.TextField("Text: ",element.text);
+            element.position = EditorGUILayout.Vector2Field("Position: ",element.position);
+            element.rotation = EditorGUILayout.Vector2Field("Rotation: ",element.rotation);
+            element.scale = EditorGUILayout.Vector2Field("Scale: ",element.scale);
+            if(GUILayout.Button("Remove this element")) elements.Remove(element);
+        }
     }
 }
