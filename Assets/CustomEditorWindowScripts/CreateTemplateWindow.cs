@@ -1,12 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System;
 using UnityEngine;
 using UnityEditor;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 public class CreateTemplateWindow : UnityEditor.EditorWindow
 {
-    string name,text;
+    string name,text,fileName;
     Vector2 _position = Vector2.zero;
     Vector2 _rotation = Vector2.zero;
     Vector2 _scale = new Vector2(2,2);
@@ -22,11 +25,14 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
 
     public void OnGUI(){
         AddElementUI();
+
         GUILayout.Label("Template Preview(Add elements to see the preview)");
          scrollPosition = GUILayout.BeginScrollView(
             scrollPosition, GUILayout.Width(0), GUILayout.Height(0));
         printEditableTemplate(template.elements,0);
         GUILayout.EndScrollView();
+
+        CreateTemplateFile();
     }
 
     void AddElementUI(){
@@ -47,10 +53,22 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
         foreach(UIElement element in elements){
             element.name = EditorGUILayout.TextField("Name: ",element.name);
             element.text = EditorGUILayout.TextField("Text: ",element.text);
-            element.position = EditorGUILayout.Vector2Field("Position: ",element.position);
-            element.rotation = EditorGUILayout.Vector2Field("Rotation: ",element.rotation);
-            element.scale = EditorGUILayout.Vector2Field("Scale: ",element.scale);
+            element.position = new SerializableVector2(EditorGUILayout.Vector2Field("Position: ",element.position.GetVector2()));
+            element.rotation = new SerializableVector2(EditorGUILayout.Vector2Field("Rotation: ",element.rotation.GetVector2()));
+            element.scale = new SerializableVector2(EditorGUILayout.Vector2Field("Scale: ",element.scale.GetVector2()));
             if(GUILayout.Button("Remove this element")) elements.Remove(element);
+        }
+    }
+
+    void CreateTemplateFile(){
+        fileName = EditorGUILayout.TextField("File Name: ",fileName);
+        GUILayout.Label("Type something in Fine Name to enable the 'Create Template' Button");
+        try{
+            if(!string.IsNullOrWhiteSpace(fileName) && GUILayout.Button("Create Template")){
+                File.WriteAllText(Application.dataPath + "/UI Templates/" + fileName + ".txt",JsonConvert.SerializeObject(template));
+            }
+        }catch(Exception e){
+            Debug.Log("Couldn't create template\n" + e.Message);
         }
     }
 }
