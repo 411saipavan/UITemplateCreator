@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 
 public class CreateTemplateWindow : UnityEditor.EditorWindow
 {
-    string name,text,fileName;
+    string name,text,fileName,filePath;
     Vector2 _position = Vector2.zero;
     Vector2 _rotation = Vector2.zero;
     Vector2 _scale = new Vector2(2,2);
@@ -33,6 +33,8 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
         GUILayout.EndScrollView();
 
         CreateTemplateFile();
+
+        SelectTemplateFile();
     }
 
     void AddElementUI(){
@@ -69,6 +71,19 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
             }
         }catch(Exception e){
             Debug.Log("Couldn't create template\n" + e.Message);
+        }
+    }
+
+    void SelectTemplateFile(){
+        try{
+            if(GUILayout.Button("Select File")){
+                filePath = EditorUtility.OpenFilePanel("Select File", "", "");
+                if(!string.IsNullOrWhiteSpace(filePath)){
+                    template = JsonConvert.DeserializeObject<TemplateClass>(File.ReadAllText(filePath));
+                }
+            }
+        }catch(Exception e){
+            Debug.Log("Couldn't load template \n" + e.Message);
         }
     }
 }
