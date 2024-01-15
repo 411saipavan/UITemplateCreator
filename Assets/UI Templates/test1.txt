@@ -1,0 +1,1 @@
+{"elements":[{"elementType":"Text","name":"123","text":"abc","position":{"x":0.0,"y":0.0},"rotation":{"x":0.0,"y":0.0},"scale":{"x":2.0,"y":2.0}},{"elementType":"Text","name":"abc","text":"abc","position":{"x":0.0,"y":0.0},"rotation":{"x":0.0,"y":0.0},"scale":{"x":2.0,"y":2.0}}]}
