@@ -18,19 +18,22 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
     private int selectedOptionIndex;
     TemplateClass template = new TemplateClass();
     TemplateClass childTemplate = new TemplateClass();
+    private GUIStyle scrollViewStyle;
 
    [MenuItem("MyTools/Create Template")]
     public static void showCreateTemplateEditorWindow(){
          CreateTemplateWindow window = GetWindow<CreateTemplateWindow>();
-         window.position = new Rect(100, 100, 500, 600);
+         window.position = new Rect(100, 100, 500, 800);
     }
 
     public void OnGUI(){
         AddElementUI();
 
+        InitializeStyles();
+
         GUILayout.Label("Template Preview(Add elements to see the preview)");
          scrollPosition = GUILayout.BeginScrollView(
-            scrollPosition, GUILayout.Width(0), GUILayout.Height(0));
+            scrollPosition, scrollViewStyle, GUILayout.Width(0), GUILayout.Height(0));
         printEditableTemplate(template.elements,0);
         GUILayout.EndScrollView();
 
@@ -41,6 +44,12 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
         if(GUILayout.Button("Instantiate this template")){
             instatiateTemplate();
         }
+
+        GUILayout.Label("Template Preview in JSON(Add elements to see the preview)");
+        scrollPosition = GUILayout.BeginScrollView(
+            scrollPosition, scrollViewStyle, GUILayout.Width(0), GUILayout.Height(0));
+        printJsonTemplate(template.elements,0);
+        GUILayout.EndScrollView();
     }
 
     void AddElementUI(){
@@ -59,41 +68,46 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
 
     void printEditableTemplate(List<UIElement> elements,int depth){
         foreach(UIElement element in elements){
-            element.name = EditorGUILayout.TextField("Name: ",element.name);
-            element.text = EditorGUILayout.TextField("Text: ",element.text);
-            element.position = new SerializableVector2(EditorGUILayout.Vector2Field("Position: ",element.position.GetVector2()));
-            element.rotation = new SerializableVector2(EditorGUILayout.Vector2Field("Rotation: ",element.rotation.GetVector2()));
-            element.scale = new SerializableVector2(EditorGUILayout.Vector2Field("Scale: ",element.scale.GetVector2()));
-            if(element.instantiatedElement!=null && GUILayout.Button("Update this element")){
-                element.instantiatedElement.name = element.name;
-                element.instantiatedElement.transform.localPosition = element.position.GetVector2();
-                element.instantiatedElement.transform.localRotation = element.rotation.GetQuaternion();
-                element.instantiatedElement.transform.localScale = element.scale.GetVector2();
-                switch(element.elementType){
-                    case UIElementType.Text:
-                        element.instantiatedElement.GetComponent<Text>().text = element.text;
-                        break;
-                    case UIElementType.InputField:
-                        element.instantiatedElement.transform.GetChild(1).GetComponent<Text>().text = element.text;
-                        break;
-                    case UIElementType.Button:
-                        element.instantiatedElement.transform.GetChild(0).GetComponent<Text>().text = element.text;
-                        break;
-                    }
-            }
-            if(GUILayout.Button("Add Child Template")){
-                filePath = EditorUtility.OpenFilePanel("Select File", "", "");
-                if(!string.IsNullOrWhiteSpace(filePath)){
-                    childTemplate = JsonConvert.DeserializeObject<TemplateClass>(File.ReadAllText(filePath));
-                    element.children.AddRange(childTemplate.elements);
+           try{ 
+                element.name = EditorGUILayout.TextField("Name: ",element.name);
+                element.text = EditorGUILayout.TextField("Text: ",element.text);
+                element.position = new SerializableVector2(EditorGUILayout.Vector2Field("Position: ",element.position.GetVector2()));
+                element.rotation = new SerializableVector2(EditorGUILayout.Vector2Field("Rotation: ",element.rotation.GetVector2()));
+                element.scale = new SerializableVector2(EditorGUILayout.Vector2Field("Scale: ",element.scale.GetVector2()));
+                if(element.instantiatedElement!=null && GUILayout.Button("Update this element")){
+                    element.instantiatedElement.name = element.name;
+                    element.instantiatedElement.transform.localPosition = element.position.GetVector2();
+                    element.instantiatedElement.transform.localRotation = element.rotation.GetQuaternion();
+                    element.instantiatedElement.transform.localScale = element.scale.GetVector2();
+                    switch(element.elementType){
+                        case UIElementType.Text:
+                            element.instantiatedElement.GetComponent<Text>().text = element.text;
+                            break;
+                        case UIElementType.InputField:
+                            element.instantiatedElement.transform.GetChild(1).GetComponent<Text>().text = element.text;
+                            break;
+                        case UIElementType.Button:
+                            element.instantiatedElement.transform.GetChild(0).GetComponent<Text>().text = element.text;
+                            break;
+                        }
                 }
-                
+                if(GUILayout.Button("Add Child Template")){
+                    filePath = EditorUtility.OpenFilePanel("Select File", "", "");
+                    if(!string.IsNullOrWhiteSpace(filePath)){
+                        childTemplate = JsonConvert.DeserializeObject<TemplateClass>(File.ReadAllText(filePath));
+                        element.children.AddRange(childTemplate.elements);
+                    }
+                    
+                }
+                if(GUILayout.Button("Remove this element")) elements.Remove(element);
+                string indentation = new string(' ', depth * 8);
+                GUILayout.Label(indentation + "children:[");
+                printEditableTemplate(element.children,depth + 1);
+                GUILayout.Label(indentation + "]");
             }
-            if(GUILayout.Button("Remove this element")) elements.Remove(element);
-            string indentation = new string(' ', depth * 8);
-            GUILayout.Label(indentation + "children:[");
-            printEditableTemplate(element.children,depth + 1);
-            GUILayout.Label(indentation + "]");
+            catch(Exception e){
+                Debug.Log("Couldnt add the element \n" + e.Message);
+            }
         }
     }
 
@@ -129,22 +143,26 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
 
     void instantiateChildrenElements(List<UIElement> elements, Transform parent){
         foreach(UIElement element in elements){
-            switch(element.elementType){
-            case UIElementType.Text:
-                var textElement = CreateText(element,parent);
-                element.instantiatedElement = textElement.textGO;
-                instantiateChildrenElements(element.children, textElement.textGO.transform);
-                break;
-            case UIElementType.InputField:
-                var inputFieldElement = CreateInputField(element,parent);
-                element.instantiatedElement = inputFieldElement.inputFieldGO;
-                instantiateChildrenElements(element.children, inputFieldElement.inputFieldGO.transform);
-                break;
-            case UIElementType.Button:
-                var buttonElement = CreateButton(element,parent);
-                element.instantiatedElement = buttonElement.buttonGO;
-                instantiateChildrenElements(element.children, buttonElement.buttonGO.transform);
-                break;
+            try{    
+                switch(element.elementType){
+                case UIElementType.Text:
+                    var textElement = CreateText(element,parent);
+                    element.instantiatedElement = textElement.textGO;
+                    instantiateChildrenElements(element.children, textElement.textGO.transform);
+                    break;
+                case UIElementType.InputField:
+                    var inputFieldElement = CreateInputField(element,parent);
+                    element.instantiatedElement = inputFieldElement.inputFieldGO;
+                    instantiateChildrenElements(element.children, inputFieldElement.inputFieldGO.transform);
+                    break;
+                case UIElementType.Button:
+                    var buttonElement = CreateButton(element,parent);
+                    element.instantiatedElement = buttonElement.buttonGO;
+                    instantiateChildrenElements(element.children, buttonElement.buttonGO.transform);
+                    break;
+                }
+            }catch(Exception e){
+                Debug.Log("Unable to instantiate element \n" + e.Message);
             }
         }
     }
@@ -254,5 +272,37 @@ public class CreateTemplateWindow : UnityEditor.EditorWindow
         textComponent.color = textColor;
 
         return textComponent;
+    }
+
+    void printJsonTemplate(List<UIElement> elements, int depth){
+        foreach(UIElement element in elements){
+            try{
+                string jsonText = JsonConvert.SerializeObject(
+                new {
+                        elementType = element.elementType.ToString(),
+                        element.name,
+                        element.position,
+                        element.rotation,
+                        element.scale},
+                    Formatting.Indented);
+                string indentation = new string(' ', depth * 8);
+                jsonText = jsonText.Replace(Environment.NewLine, $"{Environment.NewLine}{indentation}");
+                GUILayout.Label(jsonText); 
+                printJsonTemplate(element.children,depth + 1);
+                GUILayout.Label(indentation + "]"); 
+            }catch(Exception e){
+                Debug.Log("Unable to print element in Json \n" + e.Message);
+            }
+        }
+    }
+
+    private void InitializeStyles()
+    {
+        if (scrollViewStyle == null)
+        {
+            scrollViewStyle = new GUIStyle(GUI.skin.scrollView);
+            scrollViewStyle.border = new RectOffset(15, 15, 15, 15); 
+            scrollViewStyle.margin = new RectOffset(15, 15, 15, 15);
+        }
     }
 }

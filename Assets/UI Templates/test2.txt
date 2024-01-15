@@ -1,0 +1,1 @@
+{"elements":[{"elementType":"Text","name":"ABC","text":"abc","position":{"x":0.0,"y":0.0},"rotation":{"x":0.0,"y":0.0},"scale":{"x":2.0,"y":2.0},"children":[]},{"elementType":"Text","name":"inputField1","text":"inputField1","position":{"x":0.0,"y":0.0},"rotation":{"x":0.0,"y":0.0},"scale":{"x":2.0,"y":2.0},"children":[]}]}
